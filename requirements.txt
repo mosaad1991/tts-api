@@ -1,0 +1,9 @@
+fastapi==0.105.0
+uvicorn==0.24.0
+python-multipart==0.0.6
+redis==5.0.1
+edge-tts==6.1.9
+pydub==0.25.1
+langdetect==1.0.9
+aiofiles==23.2.1
+python-dotenv==1.0.0
