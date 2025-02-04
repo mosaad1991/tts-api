@@ -12,7 +12,7 @@ class Settings:
     
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
-        "https://your-frontend-domain.netlify.app"
+        "https://serene-travesseiro-3ad48c.netlify.app/"
     ]
     
     SUPPORTED_VOICES = {

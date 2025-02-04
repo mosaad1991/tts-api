@@ -25,6 +25,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # Initialize Redis Cleanup Manager
@@ -56,6 +57,14 @@ async def get_voices(language: str):
     if language not in settings.SUPPORTED_VOICES:
         raise HTTPException(status_code=400, detail="Unsupported language")
     return settings.SUPPORTED_VOICES[language]
+
+@app.options("/tts")
+async def options_tts():
+    return {}
+
+@app.options("/voices/{language}")
+async def options_voices():
+    return {}
 
 @app.post("/tts")
 async def text_to_speech(request: TTSRequest):
