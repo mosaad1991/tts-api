@@ -11,6 +11,7 @@ import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
 
+
 class TTSManager:
     def __init__(self, session_id: str, redis_client: redis.Redis, expiry_minutes: int = 5):
         self.session_id = session_id
@@ -56,7 +57,10 @@ class TTSManager:
                 rate=f"{speed:+.0f}%"
             )
             await communicate.save(output_buffer)
-            return output_buffer.getvalue()
+            output_buffer.seek(0)  # Reset buffer pointer to start
+            raw_data = output_buffer.getvalue()
+            output_buffer.close()  # Cleanup
+            return raw_data
         except Exception as e:
             logger.error(f"Error generating audio: {e}")
             raise
@@ -72,12 +76,18 @@ class TTSManager:
                 if not chunk_data:
                     raise ValueError(f"Chunk {i} not found")
 
-                audio_segment = AudioSegment.from_file(BytesIO(chunk_data), format="mp3")
-                combined += audio_segment
+                chunk_buffer = BytesIO(chunk_data)
+                chunk_buffer.seek(0)
+                audio_chunk = AudioSegment.from_file(chunk_buffer, format="mp3")
+                chunk_buffer.close()  # Cleanup
+                combined += audio_chunk
 
             output_buffer = BytesIO()
             combined.export(output_buffer, format="mp3")
-            return output_buffer.getvalue()
+            output_buffer.seek(0)
+            final_data = output_buffer.getvalue()
+            output_buffer.close()  # Cleanup
+            return final_data
 
         except Exception as e:
             logger.error(f"Error merging audio chunks: {e}")
@@ -94,7 +104,7 @@ class TTSManager:
                 "speed": speed,
                 "status": "processing"
             }
-            
+
             await self.redis.set(
                 self._get_metadata_key(),
                 json.dumps(metadata),
