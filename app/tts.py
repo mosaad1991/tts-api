@@ -48,7 +48,6 @@ class TTSManager:
         return chunks
 
     async def _generate_audio_chunk(self, text: str, voice: str, speed: float) -> bytes:
-        """Generate audio for a single chunk of text"""
         try:
             output_buffer = BytesIO()
             communicate = edge_tts.Communicate(
@@ -56,10 +55,14 @@ class TTSManager:
                 voice=voice,
                 rate=f"{speed:+.0f}%"
             )
-            await communicate.save(output_buffer)
-            output_buffer.seek(0)  # Reset buffer pointer to start
-            raw_data = output_buffer.getvalue()
-            output_buffer.close()  # Cleanup
+            # استخدام ملف مؤقت بدلاً من BytesIO
+            temp_file = tempfile.mktemp(suffix='.mp3')
+            await communicate.save(temp_file)
+
+            with open(temp_file, 'rb') as f:
+                raw_data = f.read()
+
+            os.unlink(temp_file)  # حذف الملف المؤقت
             return raw_data
         except Exception as e:
             logger.error(f"Error generating audio: {e}")
