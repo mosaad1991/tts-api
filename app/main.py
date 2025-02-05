@@ -28,6 +28,18 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
+@app.get("/")
+async def root():
+    return {
+        "status": "online",
+        "api_version": "1.0",
+        "endpoints": {
+            "health": "/health",
+            "voices": "/voices/{language}",
+            "tts": "/tts"
+        }
+    }
+
 # Initialize Redis Cleanup Manager
 cleanup_manager = RedisCleanupManager(
     cleanup_interval=int(os.getenv("CLEANUP_INTERVAL", 300)),
