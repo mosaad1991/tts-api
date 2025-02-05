@@ -23,8 +23,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Accept"],
     expose_headers=["*"]
 )
 
@@ -72,7 +72,15 @@ async def get_voices(language: str):
 
 @app.options("/tts")
 async def options_tts():
-    return {}
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Accept",
+            "Access-Control-Max-Age": "3600",
+        }
+    )
 
 @app.options("/voices/{language}")
 async def options_voices():
