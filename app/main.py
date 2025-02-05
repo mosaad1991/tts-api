@@ -8,6 +8,9 @@ import logging
 import asyncio
 import os
 
+from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.responses import JSONResponse
+
 from .config import settings
 from .tts import TTSManager
 from .utils import get_random_redis, validate_voice
@@ -21,11 +24,12 @@ app = FastAPI(title="Text to Speech API")
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Accept"],
-    expose_headers=["*"]
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600
 )
 
 @app.get("/")
@@ -45,6 +49,23 @@ cleanup_manager = RedisCleanupManager(
     cleanup_interval=int(os.getenv("CLEANUP_INTERVAL", 300)),
     max_storage_time=int(os.getenv("MAX_STORAGE_TIME", 600))
 )
+
+class PreflightMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        if request.method == "OPTIONS":
+            return JSONResponse(
+                content={},
+                status_code=200,
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "*",
+                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Max-Age": "3600",
+                }
+            )
+        return await call_next(request)
+
+app.add_middleware(PreflightMiddleware)
 
 class TTSRequest(BaseModel):
     text: str
@@ -70,21 +91,7 @@ async def get_voices(language: str):
         raise HTTPException(status_code=400, detail="Unsupported language")
     return settings.SUPPORTED_VOICES[language]
 
-@app.options("/tts")
-async def options_tts():
-    return Response(
-        status_code=200,
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Accept",
-            "Access-Control-Max-Age": "3600",
-        }
-    )
 
-@app.options("/voices/{language}")
-async def options_voices():
-    return {}
 
 @app.post("/tts")
 async def text_to_speech(request: TTSRequest):
